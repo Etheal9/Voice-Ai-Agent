@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>🎙️ Try My AI Voice Assistant</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 60px; }
+    button { font-size: 20px; padding: 10px 20px; margin: 15px; }
+    #status { margin-top: 30px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🎧 Talk to My Voice AI Agent</h1>
+  <p>Press "Start Talking", ask your question, then "Stop".</p>
+  <button id="start">Start Talking</button>
+  <button id="stop" disabled>Stop</button>
+  <div id="status">Waiting...</div>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const startBtn = document.getElementById("start");
+    const stopBtn = document.getElementById("stop");
+    const status = document.getElementById("status");
+
+    startBtn.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+      audioChunks = [];
+      status.innerText = "Recording...";
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append("audio", audioBlob);
+
+        status.innerText = "Sending to AI...";
+        
+        fetch("https://your-backend-url.com/api/audio", {
+          method: "POST",
+          body: formData
+        }).then(response => response.blob())
+          .then(aiAudio => {
+            const audioURL = URL.createObjectURL(aiAudio);
+            const audio = new Audio(audioURL);
+            audio.play();
+            status.innerText = "AI responded!";
+          }).catch(() => {
+            status.innerText = "Something went wrong 😢";
+          });
+      };
+
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+  </script>
+</body>
+</html>
